@@ -56,15 +56,24 @@ int extractToken(char *input, int start, char *token) {
 char *getFormaPosFixa(char *Str) {
     static char output[MAX];
     output[0] = '\0';
-    char stack[MAX];
+    char stack[MAX][MAX]; // pilha de strings
     int top = -1;
     int i = 0;
+
+    // Converte vírgula decimal para ponto
+    for (int j = 0; Str[j] != '\0'; j++) {
+        if (Str[j] == ',') {
+            Str[j] = '.';
+        }
+    }
 
     while (i < (int)strlen(Str)) {
         if (Str[i] == ' ') {
             i++;
             continue;
         }
+
+        // Números
         if (isdigit(Str[i]) || Str[i] == '.') {
             char number[MAX];
             int k = 0;
@@ -74,39 +83,67 @@ char *getFormaPosFixa(char *Str) {
             number[k] = '\0';
             strcat(output, number);
             strcat(output, " ");
-        } else if (isalpha(Str[i])) {
+        }
+        // Funções ou variáveis
+        else if (isalpha(Str[i])) {
             char func[MAX];
-            int next = extractToken(Str, i, func);
-            i = next;
-            strcat(output, func);
-            strcat(output, " ");
-        } else if (Str[i] == '(') {
-            push(stack, &top, Str[i++]);
-        } else if (Str[i] == ')') {
-            while (top != -1 && stack[top] != '(') {
-                char op[2] = {pop(stack, &top), '\0'};
-                strcat(output, op);
+            int k = 0;
+            while (isalpha(Str[i])) {
+                func[k++] = Str[i++];
+            }
+            func[k] = '\0';
+
+            if (isFunction(func)) {
+                strcpy(stack[++top], func);
+            } else {
+                strcat(output, func);
                 strcat(output, " ");
             }
-            pop(stack, &top);
+        }
+        // Parêntese de abertura
+        else if (Str[i] == '(') {
+            strcpy(stack[++top], "(");
             i++;
-        } else if (isOperator(Str[i])) {
-            while (top != -1 && isOperator(stack[top]) &&
-                   ((precedence(stack[top]) > precedence(Str[i])) ||
-                    (precedence(stack[top]) == precedence(Str[i]) && Str[i] != '^'))) {
-                char op[2] = {pop(stack, &top), '\0'};
-                strcat(output, op);
+        }
+        // Parêntese de fechamento
+        else if (Str[i] == ')') {
+            while (top >= 0 && strcmp(stack[top], "(") != 0) {
+                strcat(output, stack[top--]);
                 strcat(output, " ");
             }
-            push(stack, &top, Str[i++]);
-        } else {
+            if (top >= 0 && strcmp(stack[top], "(") == 0) {
+                top--; // remove '('
+            }
+
+            // Se depois do ')' houver uma função no topo da pilha, aplica
+            if (top >= 0 && isFunction(stack[top])) {
+                strcat(output, stack[top--]);
+                strcat(output, " ");
+            }
+
+            i++;
+        }
+        // Operadores
+        else if (isOperator(Str[i])) {
+            char op[2] = {Str[i], '\0'};
+            while (top >= 0 && isOperator(stack[top][0]) &&
+                   ((precedence(stack[top][0]) > precedence(op[0])) ||
+                    (precedence(stack[top][0]) == precedence(op[0]) && op[0] != '^'))) {
+                strcat(output, stack[top--]);
+                strcat(output, " ");
+            }
+            strcpy(stack[++top], op);
+            i++;
+        }
+        // Qualquer outro caractere (ignorado)
+        else {
             i++;
         }
     }
 
-    while (top != -1) {
-        char op[2] = {pop(stack, &top), '\0'};
-        strcat(output, op);
+    // Esvaziar a pilha
+    while (top >= 0) {
+        strcat(output, stack[top--]);
         strcat(output, " ");
     }
 
