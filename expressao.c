@@ -252,7 +252,7 @@ float my_tan(float x) {
     return my_sin(x) / my_cos(x);
 }
 
-// Logaritmo natural usando série de Taylor
+// Logaritmo
 float my_ln(float x) {
     if (x <= 0) return -1;
 
