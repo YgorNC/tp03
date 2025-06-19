@@ -255,12 +255,23 @@ float my_tan(float x) {
 // Logaritmo natural usando série de Taylor
 float my_ln(float x) {
     if (x <= 0) return -1;
-    float y = (x - 1) / (x + 1);
+
+    // Transformação para melhorar convergência: ln(x) = ln(a * b) = ln(a) + ln(b)
     float result = 0.0f;
-    for (int i = 1; i <= 9; i += 2) {
-        result += (1.0f / i) * my_pow(y, (float)i);
+    while (x > 2.0f) {
+        x /= 2.7182818f;  // e
+        result += 1.0f;
     }
-    return 2.0f * result;
+
+    x = x - 1;
+    float term = x, sum = 0;
+    for (int n = 1; n <= 20; n++) {
+        float add = (n % 2 == 1 ? 1 : -1) * term / n;
+        sum += add;
+        term *= x;
+    }
+
+    return result + sum;
 }
 
 // Logaritmo base 10 usando my_ln
